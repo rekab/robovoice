@@ -33,7 +33,7 @@ def colorBar():
             for idx in range(last_pixel, NUM_PIXELS):
                 dots[idx] = (0, 0, 0)
             prev_last_pixel = last_pixel
-        time.sleep(.02)
+        time.sleep(.01)
 
 
 
@@ -47,12 +47,9 @@ mic = pyo.Input(chnl=0)
 
 h = pyo.Harmonizer(mic, transpo=5)
 f = pyo.FreqShift(h, shift=50)
-#voc = pyo.Vocoder(c, excite, freq=200, spread=1, q=50, slope=10)#.out()
-mm = pyo.Mixer(outs=1, chnls=2, time=.025)
-mm.addInput(0, f)
-mm.setAmp(0, 0, 0.5)
-output = pyo.Sig(mm[0]).out()
+output = f.mix(2).out()
 
+# Feed peak amp to setAmplitude
 amp = pyo.PeakAmp(output, function=setAmplitude)
 
 t = threading.Thread(target=colorBar)
