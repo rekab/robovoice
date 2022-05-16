@@ -1,1 +1,8 @@
 pyo==1.0.4
+Adafruit-Blinka==5.13.1
+adafruit-circuitpython-busdevice==5.0.4
+adafruit-circuitpython-dotstar==2.0.0
+adafruit-circuitpython-pypixelbuf==2.2.2
+Adafruit-PlatformDetect==2.28.0
+Adafruit-PureIO==1.1.8
+adafruit-python-shell==1.2.3
