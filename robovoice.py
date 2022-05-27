@@ -103,11 +103,12 @@ def main():
 
     mic = pyo.Input(chnl=0)
 
-    h = pyo.Harmonizer(mic, transpo=5, feedback=0.2, winsize=0.2)
+    #h = pyo.Harmonizer(mic, transpo=5, feedback=0.2, winsize=0.2)
+    h = pyo.Harmonizer(mic, transpo=-3, feedback=0.2, winsize=0.02)
     mix = h.mix(2)
 
-    feedback = pyo.Sig(0.7, mul=0.95)
-    flg = pyo.Delay(pyo.DCBlock(mix), delay=.02, feedback=feedback)
+    feedback = pyo.Sig(0.8, mul=0.95)
+    flg = pyo.Delay(pyo.DCBlock(mix), delay=.025, feedback=feedback)
 
     # Mix the original source with its delayed version.
     # Compress the mix to normalize the output signal.
