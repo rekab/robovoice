@@ -2,6 +2,7 @@ import adafruit_dotstar as dotstar
 import board
 import pyo
 import queue
+import sys
 import threading
 import time
 
@@ -121,8 +122,13 @@ def main():
 
     cb.start()
     s.start()
-    import code
-    code.interact(local=locals())
+    if sys.stdout.isatty():
+        import code
+        code.interact(local=locals())
+    else:
+        while True:
+            time.sleep(1)
+
     cb.shutdown()
 
 if __name__ == '__main__':
