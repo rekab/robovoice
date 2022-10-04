@@ -12,48 +12,11 @@ BRIGHTNESS = 0.5
 # Number of pixels that "fade" in.
 GRADIENT_WIDTH = 5
 
+# Pre-computed two-dimmensional array of pixel colors
+BAR_GRADIENTS = []
 
-class ColorBar(object):
-    def __init__(self):
-        self._shutdown = False
-        self.q = queue.Queue()
-        # Setup the light bar
-        self.dots = dotstar.DotStar(
-                board.SCK, board.MOSI, NUM_PIXELS, brightness=BRIGHTNESS)
-        self.dots.fill((0, 0, 0))
-
-        self.t = threading.Thread(target=self._colorBar)
-
-    def start(self):
-        print('starting thread...')
-        self.t.start()
-
-    def setAmplitude(self, *args):
-        """Should be called from the main thread."""
-        mag = max(args) * 2
-        self.q.put(mag)
-        #print('mag=%s last_pixel=%s' % (mag, last_pixel))
-
-    def _colorBar(self):
-        print('_colorBar() starting')
-        prev_value = last_pixel = 0
-        while not self._shutdown:
-            mag = self.q.get(block=True)
-            #print('got %s' % mag)
-            last_pixel = min(NUM_PIXELS, int(mag * NUM_PIXELS))
-            if last_pixel == prev_value:
-                # No change: Don't waste time writing to the bar.
-                continue
-            prev_value = last_pixel
-            #print('change: %d' % (prev_value - last_pixel))
-            #for idx in range(0, last_pixel):
-            #    self.dots[idx] = (255, 0, 0)
-            #for idx in range(last_pixel, NUM_PIXELS):
-            #    self.dots[idx] = (0, 0, 0)
-            #prev_last_pixel = last_pixel
-            self._fillBar(last_pixel)
-
-    def _fillBar(self, num_pixels):
+def PrecomputeBarGradients():
+    for num_pixels in range(0, NUM_PIXELS):
         up_gradient = [
                 # (r, g, b) values: gets whiter
                 (10+p, (p*p)//500, (p*p)//500)
@@ -63,10 +26,9 @@ class ColorBar(object):
         between_color = (20, 255, 0)
 
         down_gradient = up_gradient[:]
-
         # Start with a black bar.
         color_pixels = [(0, 0, 0)] * NUM_PIXELS
-        
+
         # Where we start and end coloring in.
         color_fill_start = max((NUM_PIXELS//2) - (num_pixels//2), 0)
         color_fill_end = min(color_fill_start + num_pixels, NUM_PIXELS - 1)
@@ -84,9 +46,55 @@ class ColorBar(object):
                 color_pixels[color_fill_end] = between_color
             color_fill_end -= 1
 
+        BAR_GRADIENTS.append(color_pixels)
+
+
+class ColorBar(object):
+    def __init__(self):
+        self._shutdown = False
+        self.q = queue.Queue(maxsize=10)
+        # Setup the light bar
+        self.dots = dotstar.DotStar(
+                board.SCK, board.MOSI, NUM_PIXELS, brightness=BRIGHTNESS)
+        self.dots.fill((0, 0, 0))
+
+        self.t = threading.Thread(target=self._colorBar)
+
+    def start(self):
+        print('starting thread...')
+        self.t.start()
+
+    def setAmplitude(self, *args):
+        """Should be called from the main thread."""
+        mag = max(args) * 2
+        self.q.put_nowait(mag)
+        #print('mag=%s last_pixel=%s' % (mag, last_pixel))
+
+    def _colorBar(self):
+        print('_colorBar() starting')
+        prev_value = last_pixel = 0
+        while not self._shutdown:
+            mag = self.q.get(block=True)
+            #print('got %s' % mag)
+            last_pixel = min(NUM_PIXELS, int(mag * NUM_PIXELS))
+            if last_pixel == prev_value:
+                # No change: Don't waste time writing to the bar.
+                continue
+            # Save the value for next time.
+            prev_value = last_pixel
+            #print('change: %d' % (prev_value - last_pixel))
+            #for idx in range(0, last_pixel):
+            #    self.dots[idx] = (255, 0, 0)
+            #for idx in range(last_pixel, NUM_PIXELS):
+            #    self.dots[idx] = (0, 0, 0)
+            #prev_last_pixel = last_pixel
+            self._fillBar(last_pixel)
+
+    def _fillBar(self, num_pixels):
+        # Lookup the values
+        color_pixels = BAR_GRADIENTS[num_pixels]
         for idx in range(0, len(color_pixels)):
             self.dots[idx] = color_pixels[idx]
-
 
     def shutdown(self):
         print('shutting down')
@@ -96,6 +104,9 @@ class ColorBar(object):
 
 
 def main():
+    # Initialize globals
+    PrecomputeBarGradients()
+
     # Setup pyo
     s = pyo.Server()
     s.setInputDevice(1)
