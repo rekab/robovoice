@@ -51,7 +51,7 @@ def PrecomputeBarGradients():
 class ColorBar(object):
     def __init__(self):
         self._shutdown = False
-        self.q = queue.Queue(maxsize=10)
+        self.q = queue.Queue(maxsize=15)
         # Setup the light bar
         self.dots = dotstar.DotStar(
                 board.SCK, board.MOSI, NUM_PIXELS, brightness=BRIGHTNESS)
@@ -70,7 +70,7 @@ class ColorBar(object):
         try:
             self.q.put_nowait(mag)
         except queue.Full:
-            print('queue full!')
+            print(f'{time.ctime()}: queue full!')
 
     def _colorBar(self):
         print('_colorBar() starting')
