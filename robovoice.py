@@ -75,12 +75,13 @@ class ColorBar(object):
             self._queueFull = False
         except queue.Full:
             if self._queueFull:
-                self.numFullQueue += 1
+                self._numFullQueue += 1
             self._queueFull = True
             print(f'{time.ctime()}: queue full!')
-            if self.numFullQueue > 50:
+            if self._numFullQueue > 50:
                 print(f'{time.ctime()}: giving up!')
-                self.shutdown = True
+                self._shutdown = True
+                sys.exit(0)
 
     def _colorBar(self):
         print('_colorBar() starting')
@@ -104,7 +105,10 @@ class ColorBar(object):
     def shutdown(self):
         print('shutting down')
         self._shutdown = True
-        self.q.put(0)
+        try:
+            self.q.put_nowait(0)
+        except:
+            pass
         self.t.join()
 
 
