@@ -16,7 +16,7 @@ GRADIENT_WIDTH = 5
 BAR_GRADIENTS = []
 
 def PrecomputeBarGradients():
-    for num_pixels in range(0, NUM_PIXELS):
+    for num_pixels in range(0, NUM_PIXELS+1):
         up_gradient = [
                 # (r, g, b) values: gets whiter
                 (10+p, (p*p)//500, (p*p)//500)
@@ -50,11 +50,14 @@ def PrecomputeBarGradients():
 
 class ColorBar(object):
     def __init__(self):
+        self._queueFull = False
+        self._numFullQueue = 0
         self._shutdown = False
         self.q = queue.Queue(maxsize=15)
         # Setup the light bar
         self.dots = dotstar.DotStar(
-                board.SCK, board.MOSI, NUM_PIXELS, brightness=BRIGHTNESS)
+            board.SCK, board.MOSI, NUM_PIXELS,
+            brightness=BRIGHTNESS, auto_write=False)
         self.dots.fill((0, 0, 0))
 
         self.t = threading.Thread(target=self._colorBar)
@@ -69,8 +72,15 @@ class ColorBar(object):
         # Don't block to prevent lag
         try:
             self.q.put_nowait(mag)
+            self._queueFull = False
         except queue.Full:
+            if self._queueFull:
+                self.numFullQueue += 1
+            self._queueFull = True
             print(f'{time.ctime()}: queue full!')
+            if self.numFullQueue > 50:
+                print(f'{time.ctime()}: giving up!')
+                self.shutdown = True
 
     def _colorBar(self):
         print('_colorBar() starting')
@@ -88,6 +98,8 @@ class ColorBar(object):
             color_pixels = BAR_GRADIENTS[last_pixel]
             for idx in range(0, len(color_pixels)):
                 self.dots[idx] = color_pixels[idx]
+            # auto_write turned off for performance, necessary to call show()
+            self.dots.show()
 
     def shutdown(self):
         print('shutting down')
@@ -122,7 +134,7 @@ def main():
     # Feed peak amp to setAmplitude
     cb = ColorBar()
     amp = pyo.PeakAmp(output, function=cb.setAmplitude)
-    # TODO: polltime(.02)?
+    amp.polltime(.1)
 
     cb.start()
     s.start()
