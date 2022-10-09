@@ -28,7 +28,6 @@ DotStar gets its power using 5v a micro USB.
 
 ### Software pre-reqs
 
->>>>>>> initial commit
 ```
 sudo apt install libportaudio2
 sudo apt install libportmidi0
