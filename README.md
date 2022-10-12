@@ -22,5 +22,5 @@ pip install -r requirements.txt
 Add to crontab:
 
 ```
-@reboot /home/pi/code/robovoice/run.sh 2>&1 | multilog s1000000 n10 /home/pi/robovoice-logs/
+@reboot /home/pi/code/robovoice/daemon.sh 2>&1 | multilog s1000000 n10 /home/pi/robovoice-logs/
 ```
