@@ -133,11 +133,15 @@ def main():
 
     # Mix the original source with its delayed version.
     # Compress the mix to normalize the output signal.
-    output = pyo.Compress(mix + flg, thresh=-20, ratio=4).out()
+    c = pyo.Compress(mix + flg, thresh=-20, ratio=4)
+    # Create a gate to filter out noise from the lightbar, so that noise
+    # doesn't cause the bar to flicker.
+    gt = pyo.Gate(c, thresh=-60)
+    output = c.out()
 
     # Feed peak amp to setAmplitude
     cb = ColorBar()
-    amp = pyo.PeakAmp(output, function=cb.setAmplitude)
+    amp = pyo.PeakAmp(gt, function=cb.setAmplitude)
     amp.polltime(.1)
 
     cb.start()
